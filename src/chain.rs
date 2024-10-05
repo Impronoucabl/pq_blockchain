@@ -11,7 +11,10 @@ pub struct Handler {
 impl Handler {
     pub fn new(data:String) -> Handler {
         let start = block::GenesisBlock::new("".to_string(), data);
-        Handler { latest_hash: start.block_hash().to_string(), root_block: start, chain: Vec::new() }
+        Handler { latest_hash: start.data_hash().to_string(), root_block: start, chain: Vec::new() }
+    }
+    pub fn latest_hash(&self) -> &str {
+        &self.latest_hash
     }
     pub fn add(mut self, block:block::MinedBlock) -> Result<Self, Box<dyn Error>> {
         self.verify_next_block(&block)?;
