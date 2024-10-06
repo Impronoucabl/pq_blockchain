@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::block::{self, Block, Mined, NewBlock};
+use crate::{block::{self, Block, Mined, NewBlock}, datablock::DataBlock};
 
 pub struct Handler {
     root_block: block::GenesisBlock,
@@ -9,7 +9,7 @@ pub struct Handler {
 }
 
 impl Handler {
-    pub fn new(data:String) -> Handler {
+    pub fn new(data:DataBlock) -> Handler {
         let start = block::GenesisBlock::new("".to_string(), data);
         Handler { latest_hash: start.data_hash().to_string(), root_block: start, chain: Vec::new() }
     }
@@ -18,6 +18,7 @@ impl Handler {
     }
     pub fn add(mut self, block:block::MinedBlock) -> Result<Self, Box<dyn Error>> {
         self.verify_next_block(&block)?;
+        self.latest_hash = block.block_hash().to_owned();
         self.chain.push(block);
         Ok(self)
     }
