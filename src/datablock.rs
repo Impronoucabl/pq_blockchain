@@ -5,7 +5,7 @@ use sha2::{Sha256, Digest};
 pub struct KeyBind {
     pub_key: String,
     identity: String,
-    signature: String,
+    privledge: String,
 }
 
 #[derive(Clone,Debug)]
@@ -24,10 +24,10 @@ pub fn keybind_vec_to_string(data: &Vec<KeyBind>) -> String {
 
 impl KeyBind {
     pub fn new(pub_key:String, identity:String, signature:String) -> KeyBind {
-        KeyBind { pub_key, identity, signature }
+        KeyBind { pub_key, identity, privledge: signature }
     }
     pub fn to_string(&self) -> String {
-        self.identity.clone() + &self.pub_key + &self.signature
+        self.identity.clone() + &self.pub_key + &self.privledge
     }
 }
 

@@ -45,7 +45,16 @@ pub struct GenesisBlock {
 }
 
 impl GenesisBlock {
-    pub fn new(block_padding:String, data:DataBlock) -> GenesisBlock {
+    pub fn new(block_padding:String, data:&DataBlock) -> GenesisBlock {
+        let block_hash = Sha256::digest(data.to_string()+&block_padding);
+        GenesisBlock {
+            header: "header text".to_owned(),
+            block_data: data.clone(),
+            block_hash: BASE64_STANDARD.encode(&block_hash),
+            block_padding,
+        }
+    }
+    pub fn from_datablock(block_padding:String, data:DataBlock) -> GenesisBlock {
         let block_hash = Sha256::digest(data.to_string()+&block_padding);
         GenesisBlock {
             header: "header text".to_owned(),
@@ -90,22 +99,18 @@ impl Mined for MinedBlock {
     fn block_hash(&self) -> &str {
         &self.block_hash
     }
-    
     fn block_padding(&self) -> &str {
         &self.block_padding
     }
 }
 
 impl BaseBlock {
-    pub fn new(old_block_hash:String, data:DataBlock) -> BaseBlock {
+    pub fn new(old_block_hash:String, data:&DataBlock) -> BaseBlock {
         BaseBlock {
             header: "header text".to_owned(),
-            block_data: data,
+            block_data: data.clone(),
             old_block_hash,
         }
-    }
-    pub fn old_block_hash(&self) -> &str {
-        &self.old_block_hash
     }
     pub fn upgrade(self, block_padding:&str) -> Result<MinedBlock,Box<dyn Error>> {
         match mining::verify_block_hash(&self, block_padding) {

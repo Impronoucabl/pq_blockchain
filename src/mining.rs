@@ -32,7 +32,7 @@ pub fn mine(block:&BaseBlock) -> String {
 pub fn verify_block_hash(block:&BaseBlock,block_padding:&str) -> Result<String, Box<dyn Error>> {
     let full_block = block.block_data().to_owned() + &block_padding;
     let hash = Sha256::digest(full_block);
-    let mut difficulty = 3;
+    let mut difficulty = 2;
     for digits in hash.as_slice() {
         if difficulty <= 0 {
             break;
