@@ -5,11 +5,12 @@ use sha2::{Sha256, Digest};
 
 use crate::datablock::DataBlock;
 use crate::mining;
-use crate::datablock;
 
-pub trait Block {
+pub trait Block:ToString {
     fn data_hash(&self) -> String;
-    fn block_data(&self) -> String;
+    fn block_data(&self) -> String {
+        self.to_string()
+    }
 }
 
 pub trait Mined {
@@ -30,7 +31,7 @@ pub struct BaseBlock {
 
 pub struct MinedBlock {
     header: String,
-    block_data: DataBlock,
+    pub block_data: DataBlock,
     block_hash: String,
     old_block_hash: String,
     block_padding: String,
@@ -65,21 +66,27 @@ impl GenesisBlock {
     }
 }
 
+impl ToString for GenesisBlock {
+    fn to_string(&self) -> String {
+        self.block_data.to_string()
+    }
+}
+
+impl ToString for BaseBlock {
+    fn to_string(&self) -> String {
+        self.block_data.to_string()
+    }
+}
+
 impl Block for GenesisBlock {
     fn data_hash(&self) -> String {
         self.block_data.hash()
-    }
-    fn block_data(&self) -> String {
-        self.block_data.to_string()
     }
 }
 
 impl Block for BaseBlock {
     fn data_hash(&self) -> String {
         self.block_data.hash()
-    }
-    fn block_data(&self) -> String {
-        self.block_data.to_string()
     }
 }
 

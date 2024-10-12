@@ -22,12 +22,30 @@ pub fn keybind_vec_to_string(data: &Vec<KeyBind>) -> String {
     s
 }
 
+impl ToString for KeyBind {
+    fn to_string(&self) -> String {
+        self.identity.clone() + &self.pub_key + &self.privledge
+    }
+}
+
+impl ToString for DataBlock {
+    fn to_string(&self) -> String {
+        keybind_vec_to_string(&self.data)
+    }
+}
+
 impl KeyBind {
     pub fn new(pub_key:String, identity:String, signature:String) -> KeyBind {
         KeyBind { pub_key, identity, privledge: signature }
     }
-    pub fn to_string(&self) -> String {
-        self.identity.clone() + &self.pub_key + &self.privledge
+    pub fn identity(&self) -> &str {
+        &self.identity
+    }
+    pub fn key(&self) -> &str {
+        &self.pub_key
+    }
+    pub fn role(&self) -> &str {
+        &self.privledge
     }
 }
 
@@ -43,7 +61,7 @@ impl DataBlock {
     pub fn hash(&self) -> String {
         self.hash.clone()
     }
-    pub fn to_string(&self) -> String {
-        keybind_vec_to_string(&self.data)
+    pub fn data_ref(&self) -> &Vec<KeyBind> {
+        &self.data
     }
 }

@@ -30,4 +30,29 @@ impl Handler {
             Err(todo!())
         }
     }
+    pub fn get_full_ident_list(&self) -> Vec<(&str, usize)> {
+        let mut list = Vec::new();
+        for n in 0..self.chain.len() {
+            let data = &self.chain[n].block_data; 
+            for ident in data.data_ref() {
+                list.push((ident.identity(),n))
+            }
+        }
+        list
+    }
+    pub fn get_ident_role_list<T>(&self, role:T) -> Vec<(&str, usize)> 
+        where
+            T: ToString,
+    {
+        let mut list = Vec::new();
+        for n in 0..self.chain.len() {
+            let data = &self.chain[n].block_data; 
+            for ident in data.data_ref() {
+                if ident.role() == role.to_string() {
+                    list.push((ident.identity(),n))
+                }
+            }
+        }
+        list
+    }
 }
