@@ -14,7 +14,6 @@ pub trait Block:ToString {
 }
 
 pub trait Mined {
-    fn block_padding(&self) -> &str;
     fn block_hash(&self) -> &str;
 }
 
@@ -34,7 +33,6 @@ pub struct MinedBlock {
     pub block_data: DataBlock,
     block_hash: String,
     old_block_hash: String,
-    block_padding: String,
 }
 
 #[derive(Debug)]
@@ -42,7 +40,6 @@ pub struct GenesisBlock {
     header: String,
     block_data: DataBlock,
     block_hash: String,
-    block_padding: String,
 }
 
 impl GenesisBlock {
@@ -52,7 +49,6 @@ impl GenesisBlock {
             header: "header text".to_owned(),
             block_data: data.clone(),
             block_hash: BASE64_STANDARD.encode(&block_hash),
-            block_padding,
         }
     }
     pub fn from_datablock(block_padding:String, data:DataBlock) -> GenesisBlock {
@@ -61,7 +57,6 @@ impl GenesisBlock {
             header: "header text".to_owned(),
             block_data: data,
             block_hash: BASE64_STANDARD.encode(&block_hash),
-            block_padding,
         }
     }
 }
@@ -106,9 +101,6 @@ impl Mined for MinedBlock {
     fn block_hash(&self) -> &str {
         &self.block_hash
     }
-    fn block_padding(&self) -> &str {
-        &self.block_padding
-    }
 }
 
 impl BaseBlock {
@@ -119,15 +111,14 @@ impl BaseBlock {
             old_block_hash,
         }
     }
-    pub fn upgrade(self, block_padding:&str) -> Result<MinedBlock,Box<dyn Error>> {
-        match mining::verify_block_hash(&self, block_padding) {
+    pub fn upgrade(self) -> Result<MinedBlock,Box<dyn Error>> {
+        match mining::verify_block_hash(&self) {
             Ok(block_hash) => {
                 Ok(MinedBlock {
                     header:self.header, 
                     block_data: self.block_data,  
                     block_hash:block_hash, 
                     old_block_hash: self.old_block_hash,
-                    block_padding: block_padding.to_owned(),
                 })
             },
             Err(e) => Err(e)

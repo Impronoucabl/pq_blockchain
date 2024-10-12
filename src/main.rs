@@ -62,9 +62,7 @@ fn main() -> Result<(),Box<dyn Error>>{
 
 fn add_data(h:chain::Handler, data:&DataBlock) -> chain::Handler {
     let block2 = block::BaseBlock::new(h.latest_hash().to_string(), data);
-    let new_pad = mining::mine(&block2);
-    println!("{}", &new_pad);
-    let new_block = block2.upgrade(&new_pad).expect("still testing");
+    let new_block = block2.upgrade().expect("still testing");
     println!("{}",new_block.block_hash());
     h.add(new_block).expect("We mined this ourselves")
 }
