@@ -1,13 +1,12 @@
 use std::error::Error;
 
-use block::Mined;
+use block::{Sealed, SealedBlock};
 use datablock::{DataBlock, KeyBind};
 use keys::gen_pkcs8_batch;
 
 mod keys;
 mod datablock;
 mod block;
-mod mining;
 mod chain;
 
 const BIND_PER_BLOCK: [usize;3] = [3,2,1];
@@ -24,8 +23,8 @@ const fn get_test_num(binding:&[usize]) -> usize {
     num
 }
 
-fn test_init() -> Vec<DataBlock> {
-    let (pub_keys,pri_keys) = gen_pkcs8_batch(TEST_NUM).expect("testing");
+fn test_init() -> (Vec<DataBlock>, String) {
+    let (pub_keys,mut pri_keys) = gen_pkcs8_batch(TEST_NUM).expect("testing");
     let identities = Vec::from(["Alice","Bob","PKIRCA1","PKIRCA2","Eve","OCSP"]);
     let privledges = Vec::from(["NODE";TEST_NUM]);
     let mut pair_it = pub_keys.iter();
@@ -47,13 +46,13 @@ fn test_init() -> Vec<DataBlock> {
         }
         block_vec.push(DataBlock::new(bind_vec));
     }
-    block_vec
+    (block_vec,pri_keys.pop().expect("literally just built this >://"))
 }
 
 fn main() -> Result<(),Box<dyn Error>>{
-    let block_vec = test_init();
+    let (block_vec, signer) = test_init();
     let mut data = block_vec.iter();
-    let mut start = chain::Handler::new(data.next().expect("We just built this"));    
+    let mut start = chain::Handler::new(data.next().expect("We just built this"),&signer)?;    
     start = add_data(start, data.next().expect("We built this with more than 1 block"));
     start = add_data(start, data.next().expect("We built this with more than 2 blocks"));
     println!("Complete!");
@@ -62,7 +61,7 @@ fn main() -> Result<(),Box<dyn Error>>{
 
 fn add_data(h:chain::Handler, data:&DataBlock) -> chain::Handler {
     let block2 = block::BaseBlock::new(h.latest_hash().to_string(), data);
-    let new_block = block2.upgrade().expect("still testing");
+    let new_block: SealedBlock = block2.into();
     println!("{}",new_block.block_hash());
     h.add(new_block).expect("We mined this ourselves")
 }
