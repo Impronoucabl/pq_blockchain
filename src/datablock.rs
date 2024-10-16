@@ -1,6 +1,7 @@
 use base64::prelude::{Engine as _, BASE64_STANDARD};
 use sha2::{Sha256, Digest};
 
+pub const DATA_ENTRY_LIMIT: u8 = 255;
 #[derive(Clone,Debug)]
 pub struct KeyBind {
     pub_key: String,
@@ -35,8 +36,8 @@ impl ToString for DataBlock {
 }
 
 impl KeyBind {
-    pub fn new(pub_key:String, identity:String, signature:String) -> KeyBind {
-        KeyBind { pub_key, identity, privledge: signature }
+    pub fn new(pub_key:String, identity:String, role:String) -> KeyBind {
+        KeyBind { pub_key, identity, privledge: role }
     }
     pub fn identity(&self) -> &str {
         &self.identity
@@ -51,6 +52,10 @@ impl KeyBind {
 
 impl DataBlock {
     pub fn new(data: Vec<KeyBind>) -> DataBlock {
+        if data.len() > DATA_ENTRY_LIMIT.into() {
+            println!("Too much data in block.");
+            println!("Continuing anyways.");
+        }
         let hash256 = Sha256::digest(keybind_vec_to_string(&data));
         DataBlock {
             data,

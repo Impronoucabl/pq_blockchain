@@ -6,22 +6,6 @@ use sha2::{Sha256, Digest};
 
 use crate::datablock::DataBlock;
 
-pub trait Block:ToString {
-    fn data_hash(&self) -> String;
-    fn block_data(&self) -> &DataBlock;
-}
-
-pub trait Sealed {
-    fn block_hash(&self) -> &str;
-}
-
-pub trait NewBlock {
-    fn old_block_hash(&self) -> &str;
-}
-pub trait Signed {
-    fn signature(&self) -> &str;
-}
-
 #[derive(Debug)]
 pub struct BaseBlock {
     header: String,
@@ -45,6 +29,22 @@ pub struct GenesisBlock {
     block_data: DataBlock,
     block_hash: String,
     sig_str: String,
+}
+
+pub trait Block:ToString {
+    fn data_hash(&self) -> String;
+    fn block_data(&self) -> &DataBlock;
+}
+
+pub trait Sealed {
+    fn block_hash(&self) -> &str;
+}
+
+pub trait NewBlock {
+    fn old_block_hash(&self) -> &str;
+}
+pub trait Signed {
+    fn sig(&self) -> &str;
 }
 
 impl ToString for GenesisBlock {
@@ -117,6 +117,17 @@ macro_rules! impl_inner_block {
     };
 }
 
+macro_rules! impl_signed {
+    ($block_type:ty) => {
+        impl Signed for $block_type {
+            fn sig(&self) -> &str {
+                &self.sig_str
+            }
+        }
+        
+    };
+}
+
 impl_block!(GenesisBlock);
 impl_block!(BaseBlock);
 impl_inner_block!(SealedBlock);
@@ -128,9 +139,18 @@ impl_newblock!(SignedBlock);
 impl_sealed!(SealedBlock);
 impl_sealed!(GenesisBlock);
 
+impl_signed!(SignedBlock);
+impl_signed!(GenesisBlock);
+
 impl NewBlock for BaseBlock {
     fn old_block_hash(&self) -> &str {
         &self.old_block_hash
+    }
+}
+
+impl Sealed for SignedBlock {
+    fn block_hash(&self) -> &str {
+        self.inner_block.block_hash()
     }
 }
 
@@ -178,5 +198,11 @@ impl SignedBlock {
             inner_block: sealed_block,
             sig_str, 
         })
+    }
+    pub fn get_plain_str(&self) -> String {
+        self.inner_block.to_string()
+    }
+    pub fn sig(&self) -> &str {
+        &self.sig_str
     }
 }
