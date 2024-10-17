@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::block::{Block, GenesisBlock, NewBlock, Sealed, SignedBlock};
+use crate::block::{Block, GenesisBlock, NewBlock, Sealed, SignedBlock, Verifiable};
 use crate::datablock::{self, DataBlock, KeyBind};
 use crate::keys;
 
@@ -18,22 +18,13 @@ impl Handler {
     pub fn latest_hash(&self) -> &str {
         &self.latest_hash
     }
-    pub fn add(mut self, block:SignedBlock) -> Result<Self, Box<dyn Error>> {
+    pub fn add(&mut self, block:SignedBlock) -> Result<(), Box<dyn Error>> {
         self.verify_next_block(&block)?;
-        let mut good_sig = false;
-        for nodes in self.get_node_list() {
-            if keys::verify_signature(&block.block_hash(), block.sig(), nodes.key()).is_ok() {
-                good_sig = true;
-                println!("Verified!");
-                break
-            } else {
-                continue
-            }
-        }
-        if !good_sig {return Err(Box::new(BadSigError{}))};
+        self.verify_hash(&block)?;
+        self.verify_sig(&block)?;
         self.latest_hash = block.block_hash().to_owned();
         self.chain.push(block);
-        Ok(self)
+        Ok(())
     }
     fn verify_next_block(&self, block:&SignedBlock) -> Result<(),Box<dyn Error>> {
         if self.latest_hash == block.old_block_hash() {
@@ -41,6 +32,30 @@ impl Handler {
         } else {
             Err(Box::new(RaceBlockError{}))
         }
+    }
+    fn verify_hash(&self, block:&SignedBlock) -> Result<(),Box<dyn Error>> {
+        match block.block_hash() == block.calc_hash() {
+            true => Ok(()),
+            false => Err(Box::new(CorruptBlock{})),
+        }
+    }
+    fn verify_sig(&self, block: &SignedBlock) -> Result<(),Box<dyn Error>> {
+        let mut good_sig = false;
+        for nodes in self.get_node_list() {
+            match keys::verify_signature(&block.block_hash(), block.sig(), nodes.key()) {
+                Ok(_) => {
+                    good_sig = true;
+                    println!("Verified!");
+                    break
+                },
+                Err(_) => {
+                    println!("Sig no-good");
+                    continue
+                }
+            }
+        }
+        if !good_sig {return Err(Box::new(BadSigError{}))};
+        Ok(())
     }
     fn _keybind_vec(&self) -> Vec<(&KeyBind, usize)>{
         let rec_iter:Vec<(&KeyBind,usize)> = self.chain.iter().enumerate()
@@ -71,22 +86,25 @@ impl Handler {
 
 #[derive(Debug)]
 pub struct BadSigError {}
-
+#[derive(Debug)]
+struct RaceBlockError {}
+#[derive(Debug)]
+struct CorruptBlock {}
 impl Error for BadSigError {}
-
+impl Error for RaceBlockError {}
+impl Error for CorruptBlock {}
 impl std::fmt::Display for BadSigError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Bad Signature")
     }
 }
-
-#[derive(Debug)]
-struct RaceBlockError {}
-
-impl Error for RaceBlockError {}
-
 impl std::fmt::Display for RaceBlockError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "A newer block has been added!")
+    }
+}
+impl std::fmt::Display for CorruptBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Stored & calc hashes don't match!")
     }
 }

@@ -47,6 +47,11 @@ pub trait Signed {
     fn sig(&self) -> &str;
 }
 
+pub trait Verifiable {
+    fn calc_hash(&self) -> String;
+    fn get_plain_str(&self) -> String;
+}
+
 impl ToString for GenesisBlock {
     fn to_string(&self) -> String {
         self.block_data.to_string()
@@ -124,7 +129,20 @@ macro_rules! impl_signed {
                 &self.sig_str
             }
         }
-        
+    };
+}
+
+macro_rules! impl_verify {
+    ($block_type:ty) => {
+        impl Verifiable for $block_type {
+            fn calc_hash(&self) -> String {
+                let block_hash = Sha256::digest(self.get_plain_str());
+                BASE64_STANDARD.encode(block_hash)
+            }
+            fn get_plain_str(&self) -> String {
+                self.inner_block.get_plain_str()
+            }
+        }
     };
 }
 
@@ -142,6 +160,9 @@ impl_sealed!(GenesisBlock);
 impl_signed!(SignedBlock);
 impl_signed!(GenesisBlock);
 
+impl_verify!(SealedBlock);
+impl_verify!(SignedBlock);
+
 impl NewBlock for BaseBlock {
     fn old_block_hash(&self) -> &str {
         &self.old_block_hash
@@ -151,6 +172,16 @@ impl NewBlock for BaseBlock {
 impl Sealed for SignedBlock {
     fn block_hash(&self) -> &str {
         self.inner_block.block_hash()
+    }
+}
+
+impl Verifiable for GenesisBlock {
+    fn calc_hash(&self) -> String {
+        let data_hash = Sha256::digest(self.get_plain_str());
+        BASE64_STANDARD.encode(&data_hash)
+    }
+    fn get_plain_str(&self) -> String {
+        self.block_data.to_string()
     }
 }
 
@@ -177,6 +208,9 @@ impl BaseBlock {
             old_block_hash,
         }
     }
+    fn get_plain_str(&self) -> String {
+        self.to_string()
+    }
 }
 
 impl From<BaseBlock> for SealedBlock {
@@ -189,6 +223,7 @@ impl From<BaseBlock> for SealedBlock {
     }
 }
 
+
 impl SignedBlock {
     pub fn from(sealed_block: SealedBlock, signer:&str) -> Result<SignedBlock,Box<dyn Error>> {
         let private_key = RsaPrivateKey::from_pkcs8_pem(signer)?;
@@ -198,9 +233,6 @@ impl SignedBlock {
             inner_block: sealed_block,
             sig_str, 
         })
-    }
-    pub fn get_plain_str(&self) -> String {
-        self.inner_block.to_string()
     }
     pub fn sig(&self) -> &str {
         &self.sig_str

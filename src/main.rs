@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use block::{GenesisBlock, Sealed, SealedBlock, Signed, SignedBlock};
+use block::{SealedBlock, SignedBlock};
 use datablock::{DataBlock, KeyBind};
 use keys::gen_pkcs8_batch;
 
@@ -53,23 +53,23 @@ fn test_init() -> (Vec<DataBlock>, Vec<String>) {
 // }
 
 fn main() -> Result<(),Box<dyn Error>>{
+    println!("Starting");
     let (block_vec, mut pri_keys) = test_init();
     pri_keys.reverse();
     let mut data = block_vec.iter();
     let signer1 = pri_keys.pop().expect("there should be 5 more");
     let signer2 = pri_keys.pop().expect("there should be 4 more");
     let mut start = chain::Handler::new(data.next().expect("We just built this"),&signer1)?; 
-    //let block = start.chain().pop().unwrap();
 
-    start = add_data(start, data.next().expect("We built this with more than 1 block"), &signer1);
-    //start = add_data(start, data.next().expect("We built this with more than 2 blocks"), &signer2);
+    add_data(&mut start, data.next().expect("We built this with more than 1 block"), &signer1)?;
+    add_data(&mut start, data.next().expect("We built this with more than 2 blocks"), &signer2)?;
     println!("Complete!");
     Ok(())
 }
 
-fn add_data(h:chain::Handler, data:&DataBlock, signer:&str) -> chain::Handler {
+fn add_data(h:&mut chain::Handler, data:&DataBlock, signer:&str) -> Result<(), Box<dyn Error>> {
     let block2 = block::BaseBlock::new(h.latest_hash().to_string(), data);
     let new_block: SealedBlock = block2.into();
-    let signed_block = SignedBlock::from(new_block, signer);
-    h.add(signed_block.expect("No signing errors here!")).expect("We mined this ourselves")
+    let signed_block = SignedBlock::from(new_block, signer)?;
+    h.add(signed_block)
 }

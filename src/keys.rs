@@ -30,7 +30,6 @@ pub fn gen_pkcs8_batch(num: usize) -> Result<(Vec<String>,Vec<String>),Box<dyn E
 pub fn verify_signature(data:&str, sig:&str, pub_key:&str) -> Result<(),Box<dyn Error>> {
     let public_key = RsaPublicKey::from_public_key_pem(pub_key)?;
     let verifying_key = VerifyingKey::<Sha256>::new_unprefixed(public_key);
-    println!("{}", sig);
     let mut buff:String = "".to_string();
     let mut full = false;
     let mut hex_vec = Vec::new();
@@ -43,7 +42,10 @@ pub fn verify_signature(data:&str, sig:&str, pub_key:&str) -> Result<(),Box<dyn 
         }
         full = !full;
     };
-    Ok(verifying_key.verify(data.as_bytes(),&Signature::try_from(hex_vec.as_slice()).expect("sig import error")).expect("sig verify err"))
+    match verifying_key.verify(data.as_bytes(),&Signature::try_from(hex_vec.as_slice())?) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(Box::new(chain::BadSigError{}))
+    }
 }
 
 pub fn test() -> Result<(),Box<dyn Error>> {
@@ -71,8 +73,7 @@ pub fn test() -> Result<(),Box<dyn Error>> {
         }
         full = !full;
     };
-    //let sig_array = [new_vec.pop().unwrap();256];
-    match verifying_key.verify(data.as_bytes(), &Signature::try_from(new_vec.as_slice())?) {//&Signature::try_from(sig_str.to_string().as_bytes())) {
+    match verifying_key.verify(data.as_bytes(), &Signature::try_from(new_vec.as_slice())?) {
         Ok(_) => Ok(()),
         Err(_) => Err(Box::new(chain::BadSigError{}))
     }
